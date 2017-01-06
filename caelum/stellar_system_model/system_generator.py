@@ -1,5 +1,5 @@
 from system_model import System
-from planet_model import generate_planet
+from planet_generator import generate_planet
 
 import math as mt
 import random as rn
