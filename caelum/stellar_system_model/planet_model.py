@@ -1,61 +1,151 @@
+import math as mt
+import random as rn
 
-M_jupiter = 1.898e27
-M_earth = 5.972e24
+M_jupiter = 2e27  # kg
+R_jupiter = 71492  # km
+M_earth = 6e24  # kg
+R_earth = 6378  # km
 
 
 class Planet(object):
 
-    def __init__(self):
-        pass
+    def __init__(self, properties):
+
+        self.p = properties
+
+    def energy_lift_mass(self, mass, start_r, end_r):
+
+        G = 6.674e-11
+        energy = G * self.p['mass'] * self.p['mass_unit'] * mass
+        energy *= (1 / start_r - 1 / end_r)
+
+        return energy
 
 
-def random_pick():
+def generate_planet(star_properties, planet_type, au):
 
-    prob = {'gas_giant': 1, 'ice_giant': 1, 'desert': 1,
-            'ocean': 1, 'titan': 1, 'barren': 1, 'terran': 1}
+    parameters = {'gas_giant': {'atmosphere': {'H': 0.9, 'He': 0.1},
+                                'mass_unit': M_jupiter,
+                                'min_mass': 0.5, 'max_mass': 8,
+                                'radius_unit': R_jupiter,
+                                'min_r': 0.8, 'max_r': 1.5,
+                                'min_a': 0.2, 'max_a': 0.4},
 
-    picks = []
-    for planet_type in prob:
-        for i in range(prob[planet_type]):
-            picks.append(planet_type)
+                  'ice_giant': {'atmosphere': {'H': 0.8, 'He': 0.2},
+                                'mass_unit': M_jupiter,
+                                'min_mass': 0.3, 'max_mass': 1.5,
+                                'radius_unit': R_jupiter,
+                                'min_r': 0.3, 'max_r': 0.8,
+                                'min_a': 0.2, 'max_a': 0.4},
 
-    return prob
+                  'desert': {'atmosphere': {},
+                             'atm_min': 0.01, 'atm_max': 0.5,
+                             'mass_unit': M_earth,
+                             'min_mass': 0.5, 'max_mass': 3,
+                             'radius_unit': R_earth,
+                             'min_a': 0.1, 'max_a': 0.6},
+
+                  'ocean': {'atmosphere': {},
+                            'atm_min': 0.5, 'atm_max': 10,
+                            'mass_unit': M_earth,
+                            'min_mass': 0.5, 'max_mass': 3,
+                            'radius_unit': R_earth,
+                            'min_a': 0.03, 'max_a': 0.1},
+
+                  'titan': {'atmosphere': {},
+                            'atm_min': 0.5, 'atm_max': 10,
+                            'mass_unit': M_earth,
+                            'min_mass': 0.5, 'max_mass': 3,
+                            'radius_unit': R_earth,
+                            'min_a': 0.5, 'max_a': 0.8},
+
+                  'terran': {'atmosphere': {},
+                             'atm_min': 0.5, 'atm_max': 10,
+                             'mass_unit': M_earth,
+                             'min_mass': 0.5, 'max_mass': 3,
+                             'radius_unit': R_earth,
+                             'min_a': 0.3, 'max_a': 0.6},
+
+                  'barren': {'mass_unit': M_earth,
+                             'min_mass': 0.5, 'max_mass': 3,
+                             'radius_unit': R_earth,
+                             'min_a': 0.1, 'max_a': 0.3}
+
+                  }
+
+    param = parameters[planet_type]
+
+    prop = {'planet_type': planet_type, 'au': au}
+
+    prop['mass'] = rn.uniform(round(param['min_mass'], 4),
+                              round(param['max_mass'], 4))
+    prop['mass_unit'] = param['mass_unit']
+
+    if 'min_r' not in param and 'max_r' not in param:
+        prop['radius'] = rn.normalvariate(prop['mass'], 0.1)
+    else:
+        prop['radius'] = rn.uniform(round(param['min_r'], 4),
+                                    round(param['max_r'], 4))
+    prop['radius_unit'] = param['radius_unit']
+
+    volume = (4 / 3) * mt.pi * mt.pow(prop['radius'], 3)
+    prop['density'] = prop['mass'] / volume
+    prop['g'] = calc_gravity(prop)
+
+    prop['semi_axis'] = prop['au'] * 1.496e11  # meters
+    period_sec = calc_period(prop, star_properties)  # seconds
+    prop['period'] = period_sec / (24 * 60 * 60)
+
+    prop['rot'] = rn.random()
+    prop['rotation'] = calc_rotation(prop)  # days
+
+    if 'atm_min' in param:
+        prop['atm'] = rn.uniform(round(param['atm_min'], 4),
+                                 round(param['atm_max'], 4))
+    prop['alb'] = rn.uniform(round(param['min_a'], 4),
+                             round(param['max_a'], 4))
+    prop['temp'] = calc_temp(prop, star_properties)  # K
+
+    return Planet(prop)
 
 
-def gas_giant():
+def calc_period(prop, star):
 
-    prop = dict()
+    G = 6.674e-11
+    u = G * star['mass'] * star['mass_unit']
 
-    prop['min_mass'] = 0.5*M_jupiter
-    prop['max_mass'] = 4*M_jupiter
+    period = 2 * mt.pi * mt.sqrt((mt.pow(prop['semi_axis'], 3) / u))
 
-    prop['atmosphere'] = {'H': 0.9, 'He': 0.1}
-
-    return prop
+    return period
 
 
-def ice_giant():
+def calc_temp(prop, star):
 
-    prop = dict()
+    A_ratio = (prop['rot'] * 0.25) + 0.25
+    prop_constant = 5.67e-8
 
-    prop['min_mass'] = 0.1*M_jupiter
-    prop['max_mass'] = 0.5*M_jupiter
+    num = A_ratio * star['lum'] * star['lum_unit'] * (1 - prop['alb'])
+    #|Note 0.96 is emission which should be modeled later
+    dem = 4 * mt.pi * prop_constant * 0.96 * mt.pow(prop['semi_axis'], 2)
 
-    prop['atmosphere'] = {'H': 0.8, 'He': 0.2}
+    temp = mt.pow(num / dem, 0.25)
 
-    return prop
-
-
-def desert():
-
-    prop = dict()
-
-    prop['min_mass'] = 0.5*M_earth
-    prop['max_mass'] = 3*M_earth
-
-    prop['atm_min'] = 0.0001
-    prop['atm_max'] = 1
-
-    return prop
+    return temp
 
 
+def calc_rotation(prop):
+
+    rotation = prop['rot'] * (30 - 1) + 1  # days
+
+    return rotation
+
+
+def calc_gravity(prop):
+
+    earth_ratio = 5.98e24 / mt.pow(1.276e7, 2)
+    planet_ratio = (prop['mass'] * prop['mass_unit']) / \
+                    mt.pow(prop['radius'] * prop['radius_unit'] * 1000, 2)
+
+    gravity = planet_ratio / earth_ratio
+
+    return gravity
