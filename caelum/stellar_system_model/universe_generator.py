@@ -1,8 +1,10 @@
 from universe_model import Universe
 from system_generator import generate_system
+from simple_gui import display_system
 
 import math as mt
 import pandas as pd
+import random as rn
 
 
 def generate_universe():
@@ -49,4 +51,8 @@ def estimate_star_mass(lum):
 
     return mass
 
-generate_universe()
+
+uni = generate_universe()
+
+for system in rn.sample(uni.systems, 3):
+    display_system(system)

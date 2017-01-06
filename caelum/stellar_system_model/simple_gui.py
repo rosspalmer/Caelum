@@ -1,5 +1,5 @@
 
-def planet_summary(system):
+def display_system(system):
 
     print('========================')
     print(' - Star Mass: %f' % system.star['mass'])

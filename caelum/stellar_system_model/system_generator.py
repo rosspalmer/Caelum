@@ -1,6 +1,5 @@
 from system_model import System
 from planet_model import generate_planet
-from simple_gui import planet_summary
 
 import math as mt
 import random as rn
@@ -40,7 +39,3 @@ def spawn_planet(star_properties, dist):
     planet = generate_planet(star_properties, planet_type, dist)
 
     return planet
-
-
-#sys = generate_system(1, 1)
-#planet_summary(sys)
