@@ -1,7 +1,7 @@
 from universe_model import Universe
 from system_generator import generate_system
-from simple_gui import display_system
 
+import os
 import math as mt
 import pandas as pd
 import random as rn
@@ -9,7 +9,8 @@ import random as rn
 
 def generate_universe():
 
-    stars = pd.read_csv('star_data.csv')
+    dir_path = os.path.dirname(os.path.realpath(__file__))
+    stars = pd.read_csv('%s/star_data.csv' % dir_path)
     stars['id'] = stars.index
 
     systems = []
@@ -50,9 +51,3 @@ def estimate_star_mass(lum):
     mass = mass / M_sun
 
     return mass
-
-
-uni = generate_universe()
-
-for system in rn.sample(uni.systems, 3):
-    display_system(system)
